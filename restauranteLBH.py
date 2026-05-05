@@ -174,3 +174,120 @@ def proceso_clientes(
         cola_pedidos.put(None)
 
     separador("PROCESO CLIENTES finalizado")
+
+    def proceso_cocina(
+    cola_pedidos:   multiprocessing.Queue,
+    cola_cocinados: multiprocessing.Queue,
+    sem_cocina:     multiprocessing.Semaphore,
+) -> None:
+    """
+    Proceso independiente que lanza N hilos de cocineros.
+    Cada cocinero:
+      1. Toma un pedido de cola_pedidos.
+      2. Adquiere un espacio en la cocina (semaforo de capacidad).
+      3. Cocina durante un tiempo aleatorio.
+      4. Pone el pedido en cola_cocinados.
+      5. Libera el espacio en cocina.
+    """
+    separador("PROCESO COCINA iniciado")
+
+    finalizaciones_recibidas = multiprocessing.Value("i", 0)
+    lock_fin = threading.Lock()
+
+    def hilo_cocinero(id_cocinero: int) -> None:
+        threading.current_thread().name = f"Cocinero número {id_cocinero}"
+        while True:
+            pedido = cola_pedidos.get()
+
+            if pedido is None:
+                # Reencolar la señal de fin para que otros cocineros la vean
+                cola_pedidos.put(None)
+                log("COCINA", f"Cocinero {id_cocinero} termina su turno")
+                break
+
+            # Adquirir espacio en cocina
+            sem_cocina.acquire()
+            log(
+                "COCINA",
+                f"Cocinero {id_cocinero} prepara pedido #{pedido.id_pedido} "
+                f"'{pedido.plato}' para cliente {pedido.id_cliente}",
+            )
+
+            tiempo = random.uniform(*CONFIG["tiempo_coccion"])
+            time.sleep(tiempo)
+
+            log(
+                "COCINA",
+                f"Cocinero {id_cocinero} termino pedido #{pedido.id_pedido} "
+                f"en {tiempo:.1f}s",
+            )
+
+            cola_cocinados.put(pedido)
+            sem_cocina.release()
+
+    hilos = [
+        threading.Thread(target=hilo_cocinero, args=(i,))
+        for i in range(1, CONFIG["num_cocineros"] + 1)
+    ]
+    for t in hilos:
+        t.start()
+    for t in hilos:
+        t.join()
+
+    # Señal de fin para meseros
+    for _ in range(CONFIG["num_meseros"]):
+        cola_cocinados.put(None)
+
+    separador("PROCESO COCINA finalizado")
+
+
+def proceso_servicio(
+    cola_cocinados: multiprocessing.Queue,
+    cola_listos:    multiprocessing.Queue,
+):
+    """
+    Proceso independiente que lanza N hilos de meseros.
+    Cada mesero:
+      1. Toma un pedido listo de cola_cocinados.
+      2. Lo entrega (simula tiempo de desplazamiento).
+      3. Notifica a cola_listos que el pedido fue entregado.
+    """
+    separador("PROCESO SERVICIO iniciado")
+
+    finalizaciones = [0]
+    lock_fin = threading.Lock()
+
+    def hilo_mesero(id_mesero: int) -> None:
+        threading.current_thread().name = f"Mesero número {id_mesero}"
+        while True:
+            pedido = cola_cocinados.get()
+
+            if pedido is None:
+                log("MESERO", f"Mesero {id_mesero} termina su turno")
+                break
+
+            tiempo = random.uniform(*CONFIG["tiempo_entrega"])
+            log(
+                "MESERO",
+                f"Mesero {id_mesero} lleva pedido #{pedido.id_pedido} "
+                f"'{pedido.plato}' a mesa {pedido.mesa}",
+            )
+            time.sleep(tiempo)
+
+            log(
+                "MESERO",
+                f"Mesero {id_mesero} entrego pedido #{pedido.id_pedido} "
+                f"al cliente {pedido.id_cliente}",
+            )
+            cola_listos.put(pedido.id_pedido)
+
+    hilos = [
+        threading.Thread(target=hilo_mesero, args=(i,))
+        for i in range(1, CONFIG["num_meseros"] + 1)
+    ]
+    for t in hilos:
+        t.start()
+    for t in hilos:
+        t.join()
+
+    separador("PROCESO SERVICIO finalizado")
