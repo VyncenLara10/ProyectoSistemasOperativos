@@ -175,7 +175,7 @@ def proceso_clientes(
 
     separador("PROCESO CLIENTES finalizado")
 
-    def proceso_cocina(
+def proceso_cocina(
     cola_pedidos:   multiprocessing.Queue,
     cola_cocinados: multiprocessing.Queue,
     sem_cocina:     multiprocessing.Semaphore,
@@ -291,3 +291,79 @@ def proceso_servicio(
         t.join()
 
     separador("PROCESO SERVICIO finalizado")
+
+def main() -> None:
+    separador("SIMULADOR DE RESTAURANTE LOS BUENOS HERMANOS")
+    with _print_lock:
+        print(f"""
+  Configuracion:
+    Mesas disponibles   : {CONFIG['num_mesas']}
+    Cocineros           : {CONFIG['num_cocineros']}
+    Meseros             : {CONFIG['num_meseros']}
+    Clientes totales    : {CONFIG['num_clientes']}
+    Capacidad cocina    : {CONFIG['capacidad_cocina']}
+""")
+
+    # Colas para comunicacion entre procesos
+    cola_pedidos   = multiprocessing.Queue()   # Clientes va a Cocina
+    cola_cocinados = multiprocessing.Queue()   # Cocina va a Meseros
+    cola_listos    = multiprocessing.Queue()   # Meseros va a Clientes
+
+    # Semaforos
+    sem_mesas  = multiprocessing.Semaphore(CONFIG["num_mesas"])
+    sem_cocina = multiprocessing.Semaphore(CONFIG["capacidad_cocina"])
+
+    # Contador de pedidos compartido entre procesos (exclusion mutua)
+    contador_pedido = multiprocessing.Value("i", 0)
+    lock_contador   = multiprocessing.Lock()
+
+    p_clientes = multiprocessing.Process(
+        target=proceso_clientes,
+        name="Proceso-Clientes",
+        args=(
+            cola_pedidos,
+            cola_listos,
+            sem_mesas,
+            sem_cocina,
+            contador_pedido,
+            lock_contador,
+        ),
+    )
+
+    p_cocina = multiprocessing.Process(
+        target=proceso_cocina,
+        name="Proceso-Cocina",
+        args=(cola_pedidos, cola_cocinados, sem_cocina),
+    )
+
+    p_servicio = multiprocessing.Process(
+        target=proceso_servicio,
+        name="Proceso-Servicio",
+        args=(cola_cocinados, cola_listos),
+    )
+
+    inicio = time.time()
+
+    # Los tres procesos corren en paralelo
+    p_clientes.start()
+    p_cocina.start()
+    p_servicio.start()
+
+    p_clientes.join()
+    p_cocina.join()
+    p_servicio.join()
+
+    duracion = time.time() - inicio
+    separador("CERRAMOS EL RESTAURANTE")
+    with _print_lock:
+        print(f"\n  Todos los clientes fueron atendidos.")
+        print(f"  Tiempo total de simulacion: {duracion:.2f} segundos.\n")
+    separador()
+
+
+if __name__ == "__main__":
+    try:
+        multiprocessing.set_start_method("fork")
+    except RuntimeError:
+        pass 
+    main()
