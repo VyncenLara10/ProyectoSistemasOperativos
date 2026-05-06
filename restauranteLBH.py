@@ -8,15 +8,15 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 CONFIG = {
-    "num_mesas":        1,   # Mesas disponibles en el salon
-    "num_cocineros":    1,   # Hilos de cocineros en el proceso Cocina
-    "num_meseros":      1,   # Hilos de meseros en el proceso Servicio
-    "num_clientes":    10,   # Total de clientes que llegaran
-    "capacidad_cocina": 1,   # Pedidos que puede tener en proceso la cocina a la vez
-    "tiempo_llegada":  (1, 1),  # Rango de segundos entre llegadas de clientes
-    "tiempo_coccion":  (2, 8),  # Rango de segundos para preparar un pedido
-    "tiempo_entrega":  (5, 7),  # Rango de segundos para que el mesero entregue
-    "tiempo_comer":    (10, 12),  # Rango de segundos que el cliente ocupa la mesa
+    "num_mesas":        12,   # Mesas disponibles en el salon
+    "num_cocineros":    4,   # Hilos de cocineros en el proceso Cocina
+    "num_meseros":      2,   # Hilos de meseros en el proceso Servicio
+    "num_clientes":    10,   
+    "capacidad_cocina": 4,   # Pedidos que puede tener en proceso la cocina a la vez
+    "tiempo_llegada":  (1, 1),  
+    "tiempo_coccion":  (2, 4),  
+    "tiempo_entrega":  (1, 2),  
+    "tiempo_comer":    (15, 18),
 }
 
 MENU = [ "Sopa Mein", "Carne asada","Pizza", "Tacos de cochinita",
