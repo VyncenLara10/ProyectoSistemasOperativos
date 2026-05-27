@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Los Buenos Hermanos — Simulador</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --syne:'Syne',sans-serif;
+  --mono:'DM Mono',monospace;
+  --bg:#0f0f0f;
+  --surface:#1a1a1a;
+  --surface2:#242424;
+  --surface3:#2e2e2e;
+  --border:#333;
+  --text:#f0f0f0;
+  --text2:#999;
+  --text3:#666;
+  --orange:#ff6b35;
+  --orange2:#ff9a6c;
+  --green:#4ade80;
+  --green2:#22c55e;
+  --yellow:#fbbf24;
+  --red:#f87171;
+  --blue:#60a5fa;
+  --purple:#a78bfa;
+  --pink:#f472b6;
+  --teal:#2dd4bf;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--syne);min-height:100vh}
+.app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100}
+.logo{font-size:18px;font-weight:800;letter-spacing:-0.5px;color:var(--orange)}
+.logo span{color:var(--text2);font-weight:400;font-size:13px;margin-left:8px}
+.tabs{display:flex;gap:4px}
+.tab{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:var(--syne);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.tab.active{background:var(--orange);border-color:var(--orange);color:#000}
+.tab:hover:not(.active){background:var(--surface2);color:var(--text)}
+.main{display:grid;grid-template-columns:280px 1fr;flex:1;min-height:calc(100vh - 56px)}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;height:calc(100vh - 56px);position:sticky;top:56px}
+.panel{background:var(--surface2);border-radius:10px;border:1px solid var(--border);overflow:hidden}
+.panel-head{padding:10px 14px;background:var(--surface3);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text2);text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.panel-body{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.cfg-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cfg-label{font-size:12px;color:var(--text2);flex:1}
+.cfg-controls{display:flex;align-items:center;gap:6px}
+.cfg-val{font-family:var(--mono);font-size:13px;font-weight:500;min-width:24px;text-align:center;color:var(--text)}
+.btn-sm{width:22px;height:22px;border-radius:5px;border:1px solid var(--border);background:var(--surface3);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:var(--syne)}
+.btn-sm:hover{background:var(--surface);border-color:var(--orange);color:var(--orange)}
+.btn-main{width:100%;padding:10px;border-radius:8px;border:none;background:var(--orange);color:#000;font-family:var(--syne);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:0.3px}
+.btn-main:hover{background:var(--orange2)}
+.btn-main:disabled{background:var(--surface3);color:var(--text3);cursor:not-allowed}
+.btn-stop{background:var(--red);color:#fff}
+.btn-stop:hover:not(:disabled){background:#ef4444}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat{background:var(--surface3);border-radius:8px;padding:8px 10px;text-align:center}
+.stat-n{font-size:20px;font-weight:700;font-family:var(--mono)}
+.stat-l{font-size:10px;color:var(--text2);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.deadlock-badge{background:#1a0a0a;border:1px solid var(--red);border-radius:8px;padding:10px 12px;display:none}
+.deadlock-badge.show{display:block}
+.deadlock-title{color:var(--red);font-size:12px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.deadlock-msg{font-size:11px;color:#fca5a5;line-height:1.5;font-family:var(--mono)}
+.fix-btn{margin-top:8px;width:100%;padding:7px;border-radius:6px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:var(--syne);font-size:11px;font-weight:700;cursor:pointer;transition:all .2s}
+.fix-btn:hover{background:var(--red);color:#fff}
+.content{display:flex;flex-direction:column;overflow:hidden}
+.view-panel{display:none;flex:1;padding:16px;gap:16px;overflow:auto;flex-direction:column}
+.view-panel.active{display:flex}
+.section-title{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text2);text-transform:uppercase;margin-bottom:8px}
+.queue-area{background:var(--surface);border-radius:10px;border:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:8px}
+.queue-track{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:44px;padding:8px;background:var(--surface2);border-radius:8px;border:1px dashed var(--border)}
+.queue-label{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.tables-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px}
+.table-card{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:8px;text-align:center;transition:all .3s;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.table-card.free{border-color:var(--green);background:#051405}
+.table-card.occupied{border-color:var(--orange);background:#150a03}
+.table-icon{font-size:22px}
+.table-id{font-size:10px;font-family:var(--mono);font-weight:500;color:var(--text2)}
+.table-client{font-size:12px;font-weight:700;color:var(--orange)}
+.table-status{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
+.dot{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--mono);transition:all .3s;border:2px solid transparent}
+.dot.waiting{background:#1a1a0a;border-color:var(--yellow);color:var(--yellow);animation:pulse 1.5s infinite}
+.dot.seated{background:#0a1a0a;border-color:var(--green);color:var(--green)}
+.dot.eating{background:#051510;border-color:var(--teal);color:var(--teal);animation:eat 2s infinite}
+.dot.done{background:var(--surface3);border-color:var(--text3);color:var(--text3)}
+.dot.cooking{background:#1a0f05;border-color:var(--orange);color:var(--orange);animation:cook 1s infinite}
+.dot.serving{background:#0a0a1a;border-color:var(--blue);color:var(--blue);animation:pulse 1s infinite}
+.dot.queue{background:#1a0a0a;border-color:var(--red);color:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes eat{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes cook{0%{box-shadow:0 0 0 0 rgba(255,107,53,.4)}70%{box-shadow:0 0 0 8px rgba(255,107,53,0)}100%{box-shadow:0 0 0 0 rgba(255,107,53,0)}}
+.area{background:var(--surface2);border-radius:10px;border:1px solid var(--border);overflow:hidden;min-height:110px}
+.area-head{padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.area-body{padding:10px;display:flex;flex-wrap:wrap;gap:6px;min-height:60px;align-content:flex-start}
+.process-bar{display:flex;flex-direction:column;gap:4px}
+.proc-header{display:flex;align-items:center;justify-content:space-between}
+.proc-name{font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px}
+.proc-badge{font-size:9px;padding:2px 7px;border-radius:4px;font-family:var(--mono);font-weight:500}
+.badge-green{background:#052010;color:var(--green);border:1px solid var(--green2)}
+.badge-orange{background:#150a03;color:var(--orange);border:1px solid var(--orange)}
+.badge-blue{background:#03080f;color:var(--blue);border:1px solid #1d4ed8}
+.badge-gray{background:var(--surface3);color:var(--text2);border:1px solid var(--border)}
+.proc-bar-track{height:6px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.proc-bar-fill{height:100%;border-radius:3px;transition:width .5s}
+.log-area{background:var(--surface);border-radius:10px;border:1px solid var(--border);overflow:hidden}
+.log-head{padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.log-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px}
+.log-clear{font-size:11px;color:var(--text3);cursor:pointer;border:none;background:none;font-family:var(--syne);padding:0}
+.log-clear:hover{color:var(--orange)}
+.log-body{padding:8px;height:200px;overflow-y:auto;font-family:var(--mono);font-size:11px;line-height:1.6;display:flex;flex-direction:column;gap:1px}
+.log-entry{padding:2px 6px;border-radius:4px}
+.log-entry.cliente{color:var(--green)}
+.log-entry.cocina{color:var(--orange)}
+.log-entry.mesero{color:var(--blue)}
+.log-entry.sistema{color:var(--text2)}
+.log-entry.deadlock{color:var(--red);background:#1a0505;font-weight:500}
+.log-entry.fix{color:var(--teal);background:#031510}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.leg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.progress-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}
+.pill-bar{flex:1;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden}
+.pill-fill{height:100%;border-radius:2px;transition:width .3s}
+.timer-badge{font-family:var(--mono);font-size:10px;color:var(--text3);min-width:32px;text-align:right}
+/* EDU */
+.edu-card{background:var(--surface2);border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:10px}
+.edu-card-head{padding:10px 14px;background:var(--surface3);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.edu-card-head .toggle-lbl{margin-left:auto;color:var(--text3);font-size:10px}
+.edu-card-body{padding:14px;font-size:12px;line-height:1.7;color:var(--text2);display:none}
+.edu-card-body.open{display:block}
+.edu-code{font-family:var(--mono);background:var(--surface);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--orange2);margin:8px 0;border-left:3px solid var(--orange)}
+.edu-hl{color:var(--text);font-weight:600}
+.chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--mono)}
+.chip-orange{background:#1a0a03;color:var(--orange);border:1px solid var(--orange)}
+.chip-green{background:#031505;color:var(--green);border:1px solid var(--green2)}
+.chip-blue{background:#030810;color:var(--blue);border:1px solid #2563eb}
+.chip-purple{background:#0a0315;color:var(--purple);border:1px solid #7c3aed}
+.chip-red{background:#150303;color:var(--red);border:1px solid #dc2626}
+.process-diagram{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0}
+.proc-box{border-radius:8px;padding:8px 12px;font-size:11px;font-weight:700;text-align:center;min-width:70px}
+.queue-box{border:1px dashed;border-radius:6px;padding:4px 10px;font-size:10px;font-family:var(--mono);text-align:center}
+.semaphore-vis{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0}
+.sem-box{border-radius:8px;border:2px solid;padding:6px 10px;font-size:11px;font-family:var(--mono);min-width:60px;text-align:center}
+.sem-box.available{border-color:var(--green);color:var(--green);background:#051405}
+.sem-box.taken{border-color:var(--red);color:var(--red);background:#1a0505}
+.sem-box.partial{border-color:var(--yellow);color:var(--yellow);background:#150f03}
+/* DEADLOCKS */
+.deadlock-panel{background:var(--surface2);border-radius:10px;border:1px solid var(--red);padding:14px;display:flex;flex-direction:column;gap:12px}
+.deadlock-scenario{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.scenario-card{background:var(--surface);border-radius:8px;border:1px solid var(--border);padding:10px}
+.scenario-title{font-size:11px;font-weight:700;color:var(--red);margin-bottom:6px}
+.scenario-desc{font-size:11px;color:var(--text2);line-height:1.6}
+.scenario-fix{font-size:11px;color:var(--green);margin-top:6px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <div class="logo">🍽 Los Buenos Hermanos <span>Simulador de Procesos e Hilos</span></div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('floor')">Restaurante</button>
+    <button class="tab" onclick="switchTab('edu')">Cómo funciona</button>
+    <button class="tab" onclick="switchTab('deadlocks')">Bloqueos</button>
+  </div>
+</div>
+
+<div class="main">
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="panel">
+    <div class="panel-head"><i class="ti ti-settings"></i> Configuración</div>
+    <div class="panel-body">
+      <div class="cfg-row"><span class="cfg-label">Mesas</span><div class="cfg-controls"><button class="btn-sm" onclick="adjCfg('mesas',-1)">−</button><span class="cfg-val" id="v-mesas">3</span><button class="btn-sm" onclick="adjCfg('mesas',1)">+</button></div></div>
+      <div class="cfg-row"><span class="cfg-label">Cocineros</span><div class="cfg-controls"><button class="btn-sm" onclick="adjCfg('cocineros',-1)">−</button><span class="cfg-val" id="v-cocineros">2</span><button class="btn-sm" onclick="adjCfg('cocineros',1)">+</button></div></div>
+      <div class="cfg-row"><span class="cfg-label">Meseros</span><div class="cfg-controls"><button class="btn-sm" onclick="adjCfg('meseros',-1)">−</button><span class="cfg-val" id="v-meseros">2</span><button class="btn-sm" onclick="adjCfg('meseros',1)">+</button></div></div>
+      <div class="cfg-row"><span class="cfg-label">Clientes</span><div class="cfg-controls"><button class="btn-sm" onclick="adjCfg('clientes',-1)">−</button><span class="cfg-val" id="v-clientes">8</span><button class="btn-sm" onclick="adjCfg('clientes',1)">+</button></div></div>
+      <div class="cfg-row"><span class="cfg-label">Cap. cocina</span><div class="cfg-controls"><button class="btn-sm" onclick="adjCfg('capcocina',-1)">−</button><span class="cfg-val" id="v-capcocina">2</span><button class="btn-sm" onclick="adjCfg('capcocina',1)">+</button></div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><i class="ti ti-flame"></i> Escenario de bloqueo</div>
+    <div class="panel-body">
+      <div class="cfg-row">
+        <span class="cfg-label" style="font-size:11px">Forzar deadlock al inicio</span>
+        <input type="checkbox" id="force-deadlock" style="width:16px;height:16px;accent-color:var(--red)">
+      </div>
+      <div style="font-size:10px;color:var(--text3);line-height:1.5">Pone 1 mesa, 1 cocinero, cap=1, 10 clientes — provoca inanición visible</div>
+    </div>
+  </div>
+
+  <button class="btn-main" id="btn-start" onclick="startSim()"><i class="ti ti-player-play"></i> Iniciar simulación</button>
+  <button class="btn-main btn-stop" id="btn-stop" onclick="stopSim()" disabled><i class="ti ti-player-stop"></i> Detener</button>
+
+  <div class="panel">
+    <div class="panel-head"><i class="ti ti-chart-bar"></i> Estadísticas</div>
+    <div class="panel-body">
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-n" id="s-llegaron" style="color:var(--yellow)">0</div><div class="stat-l">Llegaron</div></div>
+        <div class="stat"><div class="stat-n" id="s-sentados" style="color:var(--green)">0</div><div class="stat-l">Sentados</div></div>
+        <div class="stat"><div class="stat-n" id="s-cocinando" style="color:var(--orange)">0</div><div class="stat-l">En cocina</div></div>
+        <div class="stat"><div class="stat-n" id="s-listos" style="color:var(--teal)">0</div><div class="stat-l">Comiendo</div></div>
+      </div>
+      <div style="margin-top:4px">
+        <div class="progress-pill">
+          <span style="font-size:10px;color:var(--text2);min-width:55px">Completados</span>
+          <div class="pill-bar"><div class="pill-fill" id="prog-bar" style="width:0%;background:var(--green)"></div></div>
+          <span class="timer-badge" id="prog-pct">0%</span>
+        </div>
+        <div class="progress-pill" style="margin-top:6px">
+          <span style="font-size:10px;color:var(--text2);min-width:55px">Tiempo</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--orange)" id="sim-time">00:00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="deadlock-badge" id="deadlock-alert">
+    <div class="deadlock-title"><i class="ti ti-alert-triangle"></i> BLOQUEO DETECTADO</div>
+    <div class="deadlock-msg" id="deadlock-msg">...</div>
+    <button class="fix-btn" onclick="fixDeadlock()"><i class="ti ti-tool"></i> Aplicar solución</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- TAB: RESTAURANTE -->
+  <div class="view-panel active" id="view-floor">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <div class="section-title">Cola de espera — sem_mesas bloqueados</div>
+        <div class="queue-area">
+          <div class="queue-label">Clientes esperando mesa</div>
+          <div class="queue-track" id="queue-waiting"></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title">Procesos activos</div>
+        <div style="display:flex;flex-direction:column;gap:8px" id="process-bars"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Mesas del salón</div>
+      <div class="tables-grid" id="tables-grid"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <div>
+        <div class="section-title">Cocina — sem_cocina</div>
+        <div class="area">
+          <div class="area-head" style="color:var(--orange)"><i class="ti ti-flame"></i> Cocineros</div>
+          <div class="area-body" id="area-cocina"></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title">En tránsito</div>
+        <div class="area">
+          <div class="area-head" style="color:var(--blue)"><i class="ti ti-walk"></i> Meseros</div>
+          <div class="area-body" id="area-meseros"></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title">Comiendo</div>
+        <div class="area">
+          <div class="area-head" style="color:var(--teal)"><i class="ti ti-fork"></i> En mesa</div>
+          <div class="area-body" id="area-comiendo"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="log-area">
+      <div class="log-head">
+        <span class="log-title"><i class="ti ti-terminal"></i> Log de eventos</span>
+        <button class="log-clear" onclick="clearLog()">limpiar</button>
+      </div>
+      <div class="log-body" id="log-body"></div>
+    </div>
+
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:#1a1a0a;border:2px solid var(--yellow)"></div>Esperando mesa</div>
+      <div class="leg"><div class="leg-dot" style="background:#0a1a0a;border:2px solid var(--green)"></div>Sentado</div>
+      <div class="leg"><div class="leg-dot" style="background:#1a0f05;border:2px solid var(--orange)"></div>Cocinando</div>
+      <div class="leg"><div class="leg-dot" style="background:#0a0a1a;border:2px solid var(--blue)"></div>Siendo servido</div>
+      <div class="leg"><div class="leg-dot" style="background:#051510;border:2px solid var(--teal)"></div>Comiendo</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--surface3);border:2px solid var(--text3)"></div>Listo</div>
+    </div>
+  </div>
+
+  <!-- TAB: CÓMO FUNCIONA -->
+  <div class="view-panel" id="view-edu">
+    <div style="background:var(--surface2);border-radius:10px;border:1px solid var(--border);padding:14px;margin-bottom:4px">
+      <div class="section-title">Arquitectura del programa</div>
+      <div class="process-diagram">
+        <div class="proc-box" style="background:#150a03;border:2px solid var(--orange);color:var(--orange)">Proceso<br><small style="font-weight:400">Clientes</small></div>
+        <span style="color:var(--border);font-size:18px">→</span>
+        <div class="queue-box" style="border-color:var(--yellow);color:var(--yellow)">cola_pedidos</div>
+        <span style="color:var(--border);font-size:18px">→</span>
+        <div class="proc-box" style="background:#150a03;border:2px solid var(--orange);color:var(--orange)">Proceso<br><small style="font-weight:400">Cocina</small></div>
+        <span style="color:var(--border);font-size:18px">→</span>
+        <div class="queue-box" style="border-color:var(--blue);color:var(--blue)">cola_cocinados</div>
+        <span style="color:var(--border);font-size:18px">→</span>
+        <div class="proc-box" style="background:#03080f;border:2px solid var(--blue);color:var(--blue)">Proceso<br><small style="font-weight:400">Servicio</small></div>
+        <span style="color:var(--border);font-size:18px">→</span>
+        <div class="queue-box" style="border-color:var(--green);color:var(--green)">cola_listos</div>
+        <span style="color:var(--border);font-size:18px">→</span>
+        <div class="proc-box" style="background:#051405;border:2px solid var(--green);color:var(--green)">Clientes<br><small style="font-weight:400">despiertan</small></div>
+      </div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.6">3 <span class="edu-hl">procesos independientes</span> corriendo en paralelo (como 3 apps distintas). Se comunican solo por <span class="edu-hl">colas multiprocessing</span> — como pasar mensajes por ventanilla.</p>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-head" onclick="toggleEdu(this)">
+        <span class="chip chip-green">Proceso 1</span> proceso_clientes — Los comensales
+        <span class="toggle-lbl">▼ ver más</span>
+      </div>
+      <div class="edu-card-body">
+        <p>Lanza <span class="edu-hl">1 hilo por cada cliente</span>. Cada hilo actúa de forma independiente y paralela.</p>
+        <div class="edu-code">threading.Thread(target=hilo_cliente, args=(i,))</div>
+        <p><b>Flujo del hilo cliente:</b><br>
+        1. <span class="edu-hl">Llega</span> con retardo aleatorio<br>
+        2. <span class="edu-hl">Espera mesa</span> — <code>sem_mesas.acquire()</code> bloquea el hilo si N=0<br>
+        3. <span class="edu-hl">Se sienta</span>, genera pedido con ID único (protegido con lock)<br>
+        4. <span class="edu-hl">Encola</span> el pedido y registra un <code>threading.Event</code><br>
+        5. <span class="edu-hl">Duerme</span> en <code>evento.wait()</code> hasta ser servido<br>
+        6. <span class="edu-hl">Come</span> y llama <code>sem_mesas.release()</code></p>
+        <div class="edu-code">sem_mesas.acquire()  # Bloquea si no hay mesas
+evento.wait()        # Bloquea hasta ser servido
+sem_mesas.release()  # Libera mesa al terminar</div>
+        <p>Un <span class="edu-hl">hilo_receptor_entregas</span> escucha <code>cola_listos</code> y activa el evento del cliente correcto.</p>
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-head" onclick="toggleEdu(this)">
+        <span class="chip chip-orange">Proceso 2</span> proceso_cocina — Los cocineros
+        <span class="toggle-lbl">▼ ver más</span>
+      </div>
+      <div class="edu-card-body">
+        <p>Crea <span class="edu-hl">N hilos de cocinero</span> que compiten por tomar pedidos y por espacio en cocina.</p>
+        <div class="edu-code">sem_cocina.acquire()      # Limita pedidos simultáneos
+time.sleep(tiempo)        # Simula cocción
+cola_cocinados.put(pedido)
+sem_cocina.release()</div>
+        <p>Terminación en cascada: el proceso Clientes mete N <code>None</code> en la cola. Al sacar un <code>None</code>, el cocinero lo reencola y termina — así todos terminan uno por uno.</p>
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-head" onclick="toggleEdu(this)">
+        <span class="chip chip-blue">Proceso 3</span> proceso_servicio — Los meseros
+        <span class="toggle-lbl">▼ ver más</span>
+      </div>
+      <div class="edu-card-body">
+        <p>N hilos de mesero toman pedidos de <code>cola_cocinados</code> y los entregan a las mesas.</p>
+        <div class="edu-code">pedido = cola_cocinados.get()      # Espera si no hay nada
+time.sleep(tiempo_entrega)         # Va a la mesa
+cola_listos.put(pedido.id_pedido)  # Notifica al cliente</div>
+        <p>Al poner el ID en <code>cola_listos</code>, el <span class="edu-hl">hilo_receptor_entregas</span> activa el evento exacto del cliente — solo ese cliente despierta, no todos.</p>
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-head" onclick="toggleEdu(this)">
+        <span class="chip chip-purple">Semáforos</span> ¿Cómo controlan el acceso?
+        <span class="toggle-lbl">▼ ver más</span>
+      </div>
+      <div class="edu-card-body">
+        <p>Un semáforo es un contador con candado. Tiene N "fichas" disponibles.</p>
+        <div class="semaphore-vis">
+          <div class="sem-box available">sem_mesas<br><small>N=3 libre</small></div>
+          <span style="color:var(--text2);font-size:12px">→ acquire →</span>
+          <div class="sem-box partial">sem_mesas<br><small>N=1 parcial</small></div>
+          <span style="color:var(--text2);font-size:12px">→ acquire →</span>
+          <div class="sem-box taken">sem_mesas<br><small>N=0 lleno</small></div>
+        </div>
+        <p><span class="edu-hl">acquire()</span> resta 1. Si N=0, el hilo se bloquea hasta que alguien llame <span class="edu-hl">release()</span>.<br><br>
+        <code>sem_mesas</code> — cuántos clientes pueden estar sentados a la vez.<br>
+        <code>sem_cocina</code> — cuántos platos se cocinan simultáneamente.</p>
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-head" onclick="toggleEdu(this)">
+        <span class="chip chip-red">Mutex</span> Exclusión mutua en el contador de pedidos
+        <span class="toggle-lbl">▼ ver más</span>
+      </div>
+      <div class="edu-card-body">
+        <p>El <code>contador_pedido</code> es un <code>multiprocessing.Value</code> compartido. Sin protección, dos clientes podrían asignarse el mismo ID de pedido (race condition).</p>
+        <div class="edu-code">with lock_contador:        # Solo 1 proceso a la vez
+    contador_pedido.value += 1
+    id_pedido = contador_pedido.value</div>
+        <p>El <span class="edu-hl">lock_contador</span> hace que este bloque sea atómico: nadie puede interrumpirlo a mitad.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: BLOQUEOS -->
+  <div class="view-panel" id="view-deadlocks">
+    <div class="section-title">Escenarios de bloqueo posibles en el código</div>
+    <div class="deadlock-panel">
+      <p style="font-size:12px;color:var(--text2);line-height:1.7">
+        Un <span style="color:var(--red);font-weight:700">deadlock</span> ocurre cuando dos hilos esperan recursos que el otro tiene — eternamente. Una <span style="color:var(--yellow);font-weight:700">inanición (starvation)</span> ocurre cuando un hilo nunca logra acceder porque otros siempre se adelantan.
+      </p>
+      <div class="deadlock-scenario">
+        <div class="scenario-card">
+          <div class="scenario-title"><i class="ti ti-lock"></i> Inanición de clientes</div>
+          <div class="scenario-desc">1 mesa + 10 clientes = los últimos esperan que el primero termine de comer (15-18s). No es deadlock real pero el hilo está bloqueado indefinidamente en <code>sem_mesas.acquire()</code>.</div>
+          <div class="scenario-fix"><i class="ti ti-check"></i> <b>Solución:</b> Aumentar <code>num_mesas</code> o usar <code>sem_mesas.acquire(timeout=X)</code> para rechazar clientes tras esperar demasiado.</div>
+        </div>
+        <div class="scenario-card">
+          <div class="scenario-title"><i class="ti ti-lock"></i> Cuello de botella en cocina</div>
+          <div class="scenario-desc"><code>capacidad_cocina=1</code> con 5 cocineros hace que 4 hilos estén bloqueados en <code>sem_cocina.acquire()</code> todo el tiempo. Throughput = 1 pedido a la vez.</div>
+          <div class="scenario-fix"><i class="ti ti-check"></i> <b>Solución:</b> Igualar <code>capacidad_cocina</code> al número de cocineros para máximo paralelismo.</div>
+        </div>
+        <div class="scenario-card">
+          <div class="scenario-title"><i class="ti ti-lock"></i> Deadlock de señales None</div>
+          <div class="scenario-desc">Si el número de <code>None</code> enviados no coincide con el número de cocineros/meseros, algunos hilos quedan bloqueados forever en <code>cola.get()</code>.</div>
+          <div class="scenario-fix"><i class="ti ti-check"></i> <b>Solución:</b> <code>for _ in range(num_cocineros): cola.put(None)</code> — N señales para N trabajadores. Ya implementado.</div>
+        </div>
+        <div class="scenario-card">
+          <div class="scenario-title"><i class="ti ti-lock"></i> Race condition en contador</div>
+          <div class="scenario-desc">Sin <code>lock_contador</code>, dos hilos leen <code>valor=5</code> al mismo tiempo, ambos incrementan a 6 — dos pedidos con el mismo ID, el sistema mezcla entregas.</div>
+          <div class="scenario-fix"><i class="ti ti-check"></i> <b>Solución:</b> El <code>with lock_contador:</code> protege la operación. Nunca modificar valores compartidos sin un lock.</div>
+        </div>
+      </div>
+      <div style="background:var(--surface);border-radius:8px;padding:12px;border:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px"><i class="ti ti-bulb"></i> Cómo probar un bloqueo en esta simulación</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.8">
+          1. Activa el checkbox <b>"Forzar deadlock"</b> en el panel lateral<br>
+          2. Inicia la simulación — solo 1 cliente avanza, los demás bloqueados en <code>sem_mesas.acquire()</code><br>
+          3. Aparece la alerta roja → haz clic en <b>"Aplicar solución"</b><br>
+          4. Observa en el log cómo los hilos bloqueados retoman ejecución en cascada
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<script>
+const CFG = {mesas:3,cocineros:2,meseros:2,clientes:8,capcocina:2};
+const LIMITS = {mesas:[1,8],cocineros:[1,4],meseros:[1,4],clientes:[3,15],capcocina:[1,5]};
+const MENU = ["Sopa Mein","Carne Asada","Pizza","Tacos","Jocom","Chiles Rellenos","Caldo de Pata","Paches de Arroz"];
+let sim=null, simTime=0, simTimer=null;
+
+function adjCfg(k,d){
+  if(sim)return;
+  const [lo,hi]=LIMITS[k];
+  CFG[k]=Math.max(lo,Math.min(hi,CFG[k]+d));
+  document.getElementById('v-'+k).textContent=CFG[k];
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>{
+    b.classList.toggle('active',['floor','edu','deadlocks'][i]===t);
+  });
+  document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('view-'+t).classList.add('active');
+}
+
+function toggleEdu(head){
+  const body=head.nextElementSibling;
+  const open=body.classList.toggle('open');
+  head.querySelector('.toggle-lbl').textContent=open?'▲ cerrar':'▼ ver más';
+}
+
+function clearLog(){document.getElementById('log-body').innerHTML='';}
+
+function addLog(type,msg){
+  const el=document.getElementById('log-body');
+  const d=document.createElement('div');
+  d.className='log-entry '+type;
+  const n=new Date();
+  const ts=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>x.toString().padStart(2,'0')).join(':');
+  d.textContent=`[${ts}] ${msg}`;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
+
+function updateStats(s){
+  document.getElementById('s-llegaron').textContent=s.llegaron||0;
+  document.getElementById('s-sentados').textContent=s.sentados||0;
+  document.getElementById('s-cocinando').textContent=s.cocinando||0;
+  document.getElementById('s-listos').textContent=s.listos||0;
+  const pct=Math.round(((s.terminados||0)/CFG.clientes)*100);
+  document.getElementById('prog-bar').style.width=pct+'%';
+  document.getElementById('prog-pct').textContent=pct+'%';
+}
+
+function renderTables(tables){
+  const g=document.getElementById('tables-grid');
+  g.innerHTML='';
+  for(let i=1;i<=CFG.mesas;i++){
+    const t=tables[i]||{state:'free'};
+    const d=document.createElement('div');
+    d.className='table-card '+(t.state==='occupied'?'occupied':'free');
+    d.innerHTML=`<div class="table-icon">${t.state==='occupied'?'🔴':'🟢'}</div><div class="table-id">Mesa ${i}</div>${t.client?`<div class="table-client">C${t.client}</div>`:''}<div class="table-status">${t.food||( t.state==='occupied'?'ocupada':'libre')}</div>`;
+    g.appendChild(d);
+  }
+}
+
+function renderDot(id,state){
+  const d=document.createElement('div');
+  d.className='dot '+state;
+  d.textContent='C'+id;
+  return d;
+}
+
+function renderArea(areaId,items){
+  const a=document.getElementById(areaId);
+  a.innerHTML='';
+  if(!items.length){a.innerHTML='<span style="color:var(--text3);font-size:11px;padding:4px">ninguno</span>';return;}
+  items.forEach(it=>a.appendChild(renderDot(it.id,it.state)));
+}
+
+function renderQueue(items){
+  const q=document.getElementById('queue-waiting');
+  q.innerHTML='';
+  if(!items.length){q.innerHTML='<span style="color:var(--text3);font-size:11px">nadie esperando</span>';return;}
+  items.forEach((id,i)=>{
+    if(i>0){const a=document.createElement('span');a.style.cssText='color:var(--border);font-size:14px';a.textContent='→';q.appendChild(a);}
+    q.appendChild(renderDot(id,'queue'));
+  });
+}
+
+function renderProcessBars(procs){
+  const c=document.getElementById('process-bars');
+  c.innerHTML='';
+  procs.forEach(p=>{
+    const pct=Math.round((p.busy/p.total)*100)||0;
+    const d=document.createElement('div');
+    d.className='process-bar';
+    d.innerHTML=`<div class="proc-header"><span class="proc-name">${p.icon} ${p.name} <span class="proc-badge ${p.badgeClass}">${p.label}</span></span><span style="font-size:10px;font-family:var(--mono);color:var(--text2)">${p.busy}/${p.total}</span></div><div class="proc-bar-track"><div class="proc-bar-fill" style="width:${pct}%;background:${p.color}"></div></div>`;
+    c.appendChild(d);
+  });
+}
+
+class Simulation {
+  constructor(cfg){
+    this.cfg=Object.assign({},cfg);
+    this.clients={};
+    this.tables={};
+    this.queues={waiting:[]};
+    this.stats={llegaron:0,sentados:0,cocinando:0,listos:0,terminados:0};
+    this.mesas_free=[];
+    for(let i=1;i<=this.cfg.mesas;i++){this.mesas_free.push(i);this.tables[i]={state:'free'};}
+    this.cocineros_busy=0;
+    this.meseros_busy=0;
+    this.cocina_cap=cfg.capcocina;
+    this.running=false;
+    this.deadlockTriggered=false;
+    this.pedidosQueue=[];
+    this.cocinados=[];
+    this.pedidoCount=0;
+    this.clientsFinished=0;
+    this.timers=[];
+  }
+
+  start(){
+    this.running=true;
+    addLog('sistema','🍽 Restaurante Los Buenos Hermanos — ABIERTO');
+    addLog('sistema',`Config: ${this.cfg.mesas} mesas, ${this.cfg.cocineros} cocineros, ${this.cfg.meseros} meseros, ${this.cfg.clientes} clientes`);
+    for(let i=1;i<=this.cfg.clientes;i++){
+      const delay=(i-1)*(900+Math.random()*400);
+      this.timers.push(setTimeout(()=>this.clientArrive(i),delay));
+    }
+    this.timers.push(setInterval(()=>this.render(),600));
+  }
+
+  stop(){this.running=false;this.timers.forEach(t=>{clearTimeout(t);clearInterval(t);});this.timers=[];}
+
+  clientArrive(id){
+    if(!this.running)return;
+    this.clients[id]={state:'waiting',mesa:null,food:null};
+    this.stats.llegaron++;
+    addLog('cliente',`Cliente ${id} llega al restaurante`);
+    if(this.mesas_free.length>0){
+      this.seatClient(id);
+    } else {
+      this.queues.waiting.push(id);
+      addLog('cliente',` Cliente ${id} espera mesa (sem_mesas.acquire() bloqueado — cola: ${this.queues.waiting.length})`);
+      this.maybeDeadlockWarn();
+    }
+    this.render();
+  }
+
+  seatClient(id){
+    const mesa=this.mesas_free.shift();
+    this.clients[id].state='seated';
+    this.clients[id].mesa=mesa;
+    this.tables[mesa]={state:'occupied',client:id};
+    this.stats.sentados++;
+    const food=MENU[Math.floor(Math.random()*MENU.length)];
+    this.clients[id].food=food;
+    this.tables[mesa].food=food;
+    this.pedidoCount++;
+    const pid=this.pedidoCount;
+    addLog('cliente',`Cliente ${id} → mesa ${mesa} | pide "${food}" (pedido #${pid})`);
+    this.timers.push(setTimeout(()=>this.queueCooking(id,pid,food,mesa),300));
+  }
+
+  queueCooking(cid,pid,food,mesa){
+    if(!this.running)return;
+    this.pedidosQueue.push({cid,pid,food,mesa});
+    this.tryCook();
+  }
+
+  tryCook(){
+    while(this.pedidosQueue.length>0 && this.cocineros_busy<this.cfg.cocineros && this.cocina_cap>0){
+      const p=this.pedidosQueue.shift();
+      this.cocineros_busy++;
+      this.cocina_cap--;
+      this.stats.cocinando++;
+      if(this.clients[p.cid])this.clients[p.cid].state='cooking';
+      addLog('cocina',`Cocinero prepara #${p.pid} "${p.food}" para C${p.cid}`);
+      const t=4000+Math.random()*2000;
+      this.timers.push(setTimeout(()=>this.cookDone(p,t),t));
+    }
+  }
+
+  cookDone(p,t){
+    if(!this.running)return;
+    this.cocineros_busy=Math.max(0,this.cocineros_busy-1);
+    this.cocina_cap=Math.min(this.cfg.capcocina,this.cocina_cap+1);
+    this.stats.cocinando=Math.max(0,this.stats.cocinando-1);
+    addLog('cocina',` Pedido #${p.pid} listo en ${(t/1000).toFixed(1)}s`);
+    this.cocinados.push(p);
+    this.tryServe();
+    this.tryCook();
+    this.render();
+  }
+
+  tryServe(){
+    while(this.cocinados.length>0 && this.meseros_busy<this.cfg.meseros){
+      const p=this.cocinados.shift();
+      this.meseros_busy++;
+      if(this.clients[p.cid])this.clients[p.cid].state='serving';
+      addLog('mesero',`🚶 Mesero lleva #${p.pid} "${p.food}" → mesa ${p.mesa}`);
+      const t=1000+Math.random()*1500;
+      this.timers.push(setTimeout(()=>this.deliver(p),t));
+    }
+  }
+
+  deliver(p){
+    if(!this.running)return;
+    this.meseros_busy=Math.max(0,this.meseros_busy-1);
+    if(this.clients[p.cid]){
+      this.clients[p.cid].state='eating';
+      this.stats.listos++;
+      addLog('mesero',`🍽 Pedido #${p.pid} entregado a C${p.cid} — evento.set() disparado`);
+      const t=8000+Math.random()*5000;
+      this.timers.push(setTimeout(()=>this.finishEating(p.cid,p.mesa),t));
+    }
+    this.tryServe();
+    this.render();
+  }
+
+  finishEating(cid,mesa){
+    if(!this.running)return;
+    if(this.clients[cid]){
+      this.clients[cid].state='done';
+      this.stats.listos=Math.max(0,this.stats.listos-1);
+      this.clientsFinished++;
+      addLog('cliente',`✔ C${cid} termina, libera mesa ${mesa} — sem_mesas.release()`);
+      this.tables[mesa]={state:'free'};
+      this.mesas_free.push(mesa);
+      if(this.queues.waiting.length>0){
+        const next=this.queues.waiting.shift();
+        addLog('cliente',`➡ C${next} obtiene mesa — sem_mesas.acquire() desbloqueado`);
+        this.seatClient(next);
+      }
+      if(this.clientsFinished>=this.cfg.clientes){
+        addLog('sistema','Todos los clientes atendidos — Restaurante cierra');
+        setTimeout(()=>endSim(true),800);
+      }
+    }
+    this.render();
+  }
+
+  maybeDeadlockWarn(){
+    if(this.queues.waiting.length>=3 && !this.deadlockTriggered && this.cfg.mesas===1){
+      this.deadlockTriggered=true;
+      document.getElementById('deadlock-alert').classList.add('show');
+      document.getElementById('deadlock-msg').textContent=`${this.queues.waiting.length} hilos bloqueados en sem_mesas.acquire(). sem_mesas=0, nadie libera. Inanición activa.`;
+      addLog('deadlock',`⚠ BLOQUEO: ${this.queues.waiting.length} hilos de cliente atascados en sem_mesas.acquire() — sem_mesas N=0`);
+    }
+  }
+
+  fixDeadlock(){
+    this.cfg.mesas=Math.min(8,this.cfg.mesas+3);
+    this.cfg.capcocina=Math.min(5,this.cfg.capcocina+2);
+    for(let i=this.mesas_free.length+(Object.values(this.tables).filter(t=>t.state==='occupied').length)+1;i<=this.cfg.mesas;i++){
+      this.tables[i]={state:'free'};
+      this.mesas_free.push(i);
+    }
+    this.cocina_cap=this.cfg.capcocina;
+    addLog('fix',` Solución: mesas=${this.cfg.mesas}, cap_cocina=${this.cfg.capcocina}`);
+    addLog('fix',' sem_mesas liberado — hilos bloqueados retoman ejecución en cascada');
+    document.getElementById('deadlock-alert').classList.remove('show');
+    const toUnblock=[...this.queues.waiting];
+    this.queues.waiting=[];
+    toUnblock.forEach((id,i)=>this.timers.push(setTimeout(()=>this.seatClient(id),i*350)));
+    this.tryCook();
+    this.render();
+  }
+
+  render(){
+    renderTables(this.tables);
+    renderQueue(this.queues.waiting);
+    const byState=(s)=>Object.entries(this.clients).filter(([,c])=>c.state===s).map(([id])=>({id,state:s}));
+    renderArea('area-cocina',byState('cooking'));
+    renderArea('area-meseros',byState('serving'));
+    renderArea('area-comiendo',byState('eating'));
+    renderProcessBars([
+      {name:'Proceso Clientes',busy:Object.values(this.clients).filter(c=>!['done'].includes(c.state)).length,total:this.cfg.clientes,label:'RUNNING',badgeClass:'badge-green',color:'var(--green)'},
+      {name:'Proceso Cocina',busy:this.cocineros_busy,total:this.cfg.cocineros,label:'RUNNING',badgeClass:'badge-orange',color:'var(--orange)'},
+      {name:'Proceso Servicio',busy:this.meseros_busy,total:this.cfg.meseros,label:'RUNNING',badgeClass:'badge-blue',color:'var(--blue)'},
+    ]);
+    updateStats(Object.assign({},this.stats,{terminados:this.clientsFinished}));
+  }
+}
+
+function startSim(){
+  if(sim){sim.stop();sim=null;}
+  clearLog();
+  document.getElementById('deadlock-alert').classList.remove('show');
+  if(document.getElementById('force-deadlock').checked){
+    CFG.mesas=1;CFG.cocineros=1;CFG.capcocina=1;CFG.clientes=10;CFG.meseros=1;
+    ['mesas','cocineros','meseros','clientes','capcocina'].forEach(k=>document.getElementById('v-'+k).textContent=CFG[k]);
+  }
+  sim=new Simulation(CFG);
+  renderTables(sim.tables);
+  document.getElementById('btn-start').disabled=true;
+  document.getElementById('btn-stop').disabled=false;
+  simTime=0;
+  simTimer=setInterval(()=>{
+    simTime++;
+    document.getElementById('sim-time').textContent=[Math.floor(simTime/60),simTime%60].map(x=>x.toString().padStart(2,'0')).join(':');
+  },1000);
+  sim.start();
+  switchTab('floor');
+}
+
+function stopSim(){
+  if(sim){sim.stop();sim=null;}
+  clearInterval(simTimer);
+  addLog('sistema','⏹ Simulación detenida');
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-stop').disabled=true;
+}
+
+function endSim(ok){
+  if(sim){sim.stop();sim=null;}
+  clearInterval(simTimer);
+  if(ok)addLog('sistema',' Simulación completada');
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-stop').disabled=true;
+}
+
+function fixDeadlock(){if(sim)sim.fixDeadlock();}
+
+renderTables({});
+renderQueue([]);
+renderArea('area-cocina',[]);
+renderArea('area-meseros',[]);
+renderArea('area-comiendo',[]);
+renderProcessBars([
+  {name:'Proceso Clientes',busy:0,total:CFG.clientes,label:'IDLE',badgeClass:'badge-gray',color:'var(--text3)'},
+  {name:'Proceso Cocina',busy:0,total:CFG.cocineros,label:'IDLE',badgeClass:'badge-gray',color:'var(--text3)'},
+  {name:'Proceso Servicio',busy:0,total:CFG.meseros,label:'IDLE',badgeClass:'badge-gray',color:'var(--text3)'},
+]);
+updateStats({llegaron:0,sentados:0,cocinando:0,listos:0,terminados:0});
+</script>
+</body>
+</html>

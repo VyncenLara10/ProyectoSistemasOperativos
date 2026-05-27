@@ -2,25 +2,23 @@ import multiprocessing
 import threading
 import time
 import random
-import queue
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 
 CONFIG = {
-    "num_mesas":        12,   # Mesas disponibles en el salon
-    "num_cocineros":    4,   # Hilos de cocineros en el proceso Cocina
-    "num_meseros":      2,   # Hilos de meseros en el proceso Servicio
+    "num_mesas":        1,   # Mesas disponibles en el salon
+    "num_cocineros":    1,   # Hilos de cocineros en el proceso Cocina
+    "num_meseros":      1,   # Hilos de meseros en el proceso Servicio
     "num_clientes":    10,   
-    "capacidad_cocina": 4,   # Pedidos que puede tener en proceso la cocina a la vez
+    "capacidad_cocina": 1,   # Pedidos que puede tener en proceso la cocina a la vez
     "tiempo_llegada":  (1, 1),  
-    "tiempo_coccion":  (2, 4),  
+    "tiempo_coccion":  (4, 5),  
     "tiempo_entrega":  (1, 2),  
     "tiempo_comer":    (15, 18),
 }
 
 MENU = [ "Sopa Mein", "Carne asada","Pizza", "Tacos de cochinita",
-    "Jocom", "Chiles rellenos", "Caldo de Pata", "Tamales de arroz",
+    "Jocom", "Chiles rellenos", "Caldo de Pata", "Paches de arroz",
 ]
 
 # Bloqueo global de impresion para que las lineas no se mezclen
@@ -32,10 +30,10 @@ def log(proceso: str, mensaje: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
     hilo = threading.current_thread().name
     prefijos = {
-        "CLIENTE":  "[CLIENTE ]",
-        "COCINA":   "[COCINA  ]",
-        "MESERO":   "[MESERO  ]",
-        "SISTEMA":  "[SISTEMA ]",
+        "CLIENTE":  "[CLIENTE]",
+        "COCINA":   "[COCINA]",
+        "MESERO":   "[MESERO]",
+        "SISTEMA":  "[SISTEMA]",
     }
     prefijo = prefijos.get(proceso, f"[{proceso:<8}]")
     with _print_lock:
